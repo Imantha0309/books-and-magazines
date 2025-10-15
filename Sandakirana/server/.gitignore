@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+client/build/
+server/dist/
+
+# Environment and secrets
+.env
+.env.*
+
+# Logs and reports
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+logs/
+*.log
+coverage/
+
+# IDE and OS artifacts
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+

@@ -1,7 +1,9 @@
 .navbar {
-  background-color: #282c34;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: rgb(40, 44, 52);
   padding: 1rem 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .nav-container {
@@ -13,7 +15,7 @@
 }
 
 .nav-logo {
-  color: white;
+  color: #ffffff;
   font-size: 1.5rem;
   font-weight: bold;
   text-decoration: none;
@@ -22,22 +24,30 @@
 .nav-menu {
   display: flex;
   list-style: none;
-  gap: 2rem;
+  gap: 1.5rem;
   margin: 0;
   padding: 0;
 }
 
 .nav-item {
   margin: 0;
+  display: flex;
+  align-items: center;
 }
 
-.nav-link {
-  color: white;
+.nav-link,
+.nav-button {
+  color: #ffffff;
+  background: none;
+  border: none;
   text-decoration: none;
-  transition: color 0.3s ease;
+  font: inherit;
+  cursor: pointer;
+  padding: 0.25rem 0;
 }
 
-.nav-link:hover {
-  color: #61dafb;
+.nav-link:hover,
+.nav-button:hover {
+  text-decoration: underline;
 }
 

@@ -1,9 +1,12 @@
 import React, { useRef, useState } from 'react';
-import PostFeed from '../../components/PostFeed';
+import PostFeed from '../../components/organisms/feed/PostFeed';
+import { PostComposer } from '../../components/organisms/forms/PostComposer';
 import { useAuth } from '../../context/AuthContext';
 import { usePosts } from '../../hooks/usePosts';
+import { resizeImageFile } from '../../utils/image';
 
 const MAX_FILE_SIZE = 2.5 * 1024 * 1024; // ~2.5 MB
+const IMAGE_DIMENSIONS = { maxWidth: 1024, maxHeight: 1024 };
 
 const AuthorDashboard = () => {
   const { user } = useAuth();
@@ -25,7 +28,7 @@ const AuthorDashboard = () => {
     updateReply,
     deleteReply,
     prependPost,
-  } = usePosts(user);
+  } = usePosts(user, { authorOnly: true });
 
   const [form, setForm] = useState({ content: '', imageData: '' });
   const [preview, setPreview] = useState('');
@@ -33,13 +36,13 @@ const AuthorDashboard = () => {
   const [status, setStatus] = useState({ error: '', loading: false, success: '' });
   const fileInputRef = useRef(null);
 
-  const canPublish = user?.role === 'author';
+  const canPublish = ['author', 'user'].includes(user?.role);
 
   const handleContentChange = (event) => {
     setForm((prev) => ({ ...prev, content: event.target.value }));
   };
 
-  const handleImageChange = (event) => {
+  const handleImageChange = async (event) => {
     const file = event.target.files?.[0];
     if (!file) {
       setFileName('');
@@ -61,12 +64,22 @@ const AuthorDashboard = () => {
 
     setFileName(file.name);
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setForm((prev) => ({ ...prev, imageData: reader.result }));
-      setPreview(reader.result);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const { dataUrl } = await resizeImageFile(file, IMAGE_DIMENSIONS);
+      setForm((prev) => ({ ...prev, imageData: dataUrl }));
+      setPreview(dataUrl);
+      setStatus((prev) => ({ ...prev, error: '', success: '' }));
+    } catch (_error) {
+      setForm((prev) => ({ ...prev, imageData: '' }));
+      setPreview('');
+      setFileName('');
+      event.target.value = '';
+      setStatus({
+        error: 'Unable to process image. Please try a different file.',
+        loading: false,
+        success: '',
+      });
+    }
   };
 
   const resetForm = () => {
@@ -82,7 +95,7 @@ const AuthorDashboard = () => {
     event.preventDefault();
     if (!canPublish) {
       setStatus({
-        error: 'Only authors can publish posts.',
+        error: 'You do not have permission to publish posts.',
         loading: false,
         success: '',
       });
@@ -133,69 +146,26 @@ const AuthorDashboard = () => {
   return (
     <section className="page centered">
       <div className="dashboard-grid">
-        <div className="panel full-width">
-          <h1 className="title">Author Dashboard</h1>
-          <p className="subtitle">
-            {user?.name
+        <PostComposer
+          title="Author Dashboard"
+          subtitle={
+            user?.name
               ? `Greetings ${user.name}, share your latest work with the community.`
-              : 'Welcome back.'}
-          </p>
-          <form className="form post-form" onSubmit={handleSubmit}>
-            <label className="form-label" htmlFor="content">
-              Post content
-            </label>
-            <textarea
-              id="content"
-              name="content"
-              className="form-input text-area"
-              placeholder="Announce new releases, events, or share updates..."
-              value={form.content}
-              onChange={handleContentChange}
-              minLength={5}
-              required
-            />
-            <label className="form-label" htmlFor="image">
-              Featured image
-            </label>
-            <div className="file-upload-wrapper">
-              <input
-                id="image"
-                name="image"
-                type="file"
-                accept="image/*"
-                className="file-input-hidden"
-                ref={fileInputRef}
-                onChange={handleImageChange}
-              />
-              <div className="file-upload-control">
-                <span className="file-upload-button">Choose image</span>
-                <span className="file-upload-text">{fileName || 'No file chosen'}</span>
-              </div>
-            </div>
-            {preview && (
-              <div className="image-preview">
-                <img src={preview} alt="Post preview" />
-              </div>
-            )}
-            {status.error && <p className="form-error">{status.error}</p>}
-            {status.success && <p className="form-success">{status.success}</p>}
-            <div className="post-actions">
-              <button
-                className="button outline"
-                type="button"
-                onClick={resetForm}
-                disabled={status.loading}
-              >
-                Clear
-              </button>
-              <button className="button primary" type="submit" disabled={status.loading}>
-                {status.loading ? 'Publishing...' : 'Publish'}
-              </button>
-            </div>
-          </form>
-        </div>
+              : 'Welcome back.'
+          }
+          content={form.content}
+          onContentChange={handleContentChange}
+          onSubmit={handleSubmit}
+          onReset={resetForm}
+          onImageChange={handleImageChange}
+          preview={preview}
+          fileName={fileName}
+          status={status}
+          canPublish={canPublish}
+          fileInputRef={fileInputRef}
+        />
         <div className="panel full-width">
-          <h2 className="title">Community feed</h2>
+          <h2 className="title">Your posts</h2>
           <PostFeed
             currentUser={user}
             posts={posts}
@@ -209,7 +179,7 @@ const AuthorDashboard = () => {
             onToggleReplyLike={toggleReplyLike}
             onUpdatePost={updatePost}
             onDeletePost={deletePost}
-            onDownloadReport={downloadPostReport}
+            onDownloadReport={user?.role === 'author' ? downloadPostReport : undefined}
             onUpdateComment={updateComment}
             onDeleteComment={deleteComment}
             onUpdateReply={updateReply}

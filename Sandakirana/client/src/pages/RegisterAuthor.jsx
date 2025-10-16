@@ -1,5 +1,5 @@
 import React from 'react';
-import RegistrationForm from '../shared/RegistrationForm';
+import RegistrationForm from '../components/organisms/forms/RegistrationForm';
 
 const RegisterAuthor = () => (
   <RegistrationForm

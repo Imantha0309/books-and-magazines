@@ -8,15 +8,31 @@ const parseJson = async (response) => {
   }
 };
 
-export const usePosts = (currentUser) => {
+export const usePosts = (currentUser, options = {}) => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { authorOnly = false } = options;
+  const userId = currentUser?.id;
+
+  const buildPostsUrl = useCallback(() => {
+    if (authorOnly && userId) {
+      return `/api/posts?authorId=${encodeURIComponent(userId)}`;
+    }
+    return '/api/posts';
+  }, [authorOnly, userId]);
 
   const refresh = useCallback(async () => {
+    if (authorOnly && !userId) {
+      setPosts([]);
+      setError('');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await fetch('/api/posts');
+      const response = await fetch(buildPostsUrl());
       const json = await parseJson(response);
       if (!response.ok) {
         throw new Error(json?.message || 'Failed to load posts.');
@@ -28,7 +44,7 @@ export const usePosts = (currentUser) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [buildPostsUrl]);
 
   useEffect(() => {
     refresh();

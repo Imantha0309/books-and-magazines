@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { Input } from '../components/atoms/Input';
-import { Button } from '../components/atoms/Button';
-import { AuthTemplate } from '../components/templates/auth/AuthTemplate';
+import { useAuth } from '../../../context/AuthContext';
+import { Input } from '../../atoms/Input';
+import { Button } from '../../atoms/Button';
+import { AuthTemplate } from '../../templates/auth/AuthTemplate';
 
-const Login = () => {
+const RegistrationForm = ({ role, title, subtitle }) => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [status, setStatus] = useState({ error: '', loading: false });
+
+  const endpoint = `/api/auth/register/${role}`;
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -21,7 +23,7 @@ const Login = () => {
     setStatus({ error: '', loading: true });
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -29,7 +31,7 @@ const Login = () => {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || 'Unable to sign in.');
+        throw new Error(result.message || 'Unable to register.');
       }
 
       login(result.data);
@@ -44,19 +46,28 @@ const Login = () => {
 
   return (
     <AuthTemplate
-      title="Welcome Back"
-      subtitle="Use your email and password to access the portal."
+      title={title}
+      subtitle={subtitle}
       footer={
         <>
-          <span>Need an account?</span>
-          <div className="form-links">
-            <Link to="/register/user">Register as reader</Link>
-            <Link to="/register/author">Register as author</Link>
-          </div>
+          <span>Already have an account?</span>
+          <Link to="/login">Return to login</Link>
         </>
       }
     >
       <form className="form" onSubmit={handleSubmit}>
+        <label className="form-label" htmlFor="name">
+          Full name
+        </label>
+        <Input
+          id="name"
+          name="name"
+          type="text"
+          value={form.name}
+          onChange={handleChange}
+          autoComplete="name"
+          required
+        />
         <label className="form-label" htmlFor="email">
           Email
         </label>
@@ -78,16 +89,17 @@ const Login = () => {
           type="password"
           value={form.password}
           onChange={handleChange}
-          autoComplete="current-password"
+          autoComplete="new-password"
+          minLength={6}
           required
         />
         {status.error && <p className="form-error">{status.error}</p>}
         <Button variant="primary" type="submit" disabled={status.loading}>
-          {status.loading ? 'Signing in...' : 'Sign In'}
+          {status.loading ? 'Creating account...' : 'Create account'}
         </Button>
       </form>
     </AuthTemplate>
   );
 };
 
-export default Login;
+export default RegistrationForm;
